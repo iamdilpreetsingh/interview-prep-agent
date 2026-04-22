@@ -1,0 +1,13 @@
+services:
+  crackcode:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - agent-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  agent-data:
