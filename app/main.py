@@ -35,6 +35,22 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/debug/check-api")
+async def check_api():
+    """Test that the Anthropic API key works."""
+    from app.config import settings
+    key = settings.anthropic_api_key
+    model = settings.claude_model
+    masked = key[:10] + "..." + key[-4:] if len(key) > 14 else "TOO_SHORT"
+    try:
+        import anthropic
+        client = anthropic.AsyncAnthropic(api_key=key)
+        resp = await client.messages.create(model=model, max_tokens=10, messages=[{"role": "user", "content": "hi"}])
+        return {"status": "ok", "key": masked, "model": model, "response": resp.content[0].text}
+    except Exception as e:
+        return {"status": "error", "key": masked, "model": model, "error": str(e)}
+
+
 @app.get("/")
 async def root():
     return FileResponse(STATIC_DIR / "index.html")
