@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.database import init_db
-from app.routes import chat, goals, profile
+from app.routes import chat, dashboard, goals, profile
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="CrackCode - Interview Prep Agent",
+    title="Mikasa - Interview Prep Agent",
     description="AI-powered interview coach for SDE roles at top tech companies",
     version="1.0.0",
     lifespan=lifespan,
@@ -27,6 +27,7 @@ app = FastAPI(
 app.include_router(chat.router)
 app.include_router(profile.router)
 app.include_router(goals.router)
+app.include_router(dashboard.router)
 
 
 @app.get("/health")

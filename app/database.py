@@ -99,6 +99,48 @@ class StudyPlan(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class DailyPlan(Base):
+    __tablename__ = "daily_plans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    day_number: Mapped[int] = mapped_column(Integer)
+    date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    week_number: Mapped[int] = mapped_column(Integer, default=1)
+    phase: Mapped[str] = mapped_column(String(60), default="Phase 1")
+    status: Mapped[str] = mapped_column(String(20), default="planned")  # planned, in_progress, completed, rest_day
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class DailyTask(Base):
+    __tablename__ = "daily_tasks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    plan_id: Mapped[int] = mapped_column(Integer, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    session: Mapped[str] = mapped_column(String(30))  # morning_1, morning_2, night
+    title: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str] = mapped_column(Text, default="")
+    resources: Mapped[str] = mapped_column(Text, default="")
+    success_metric: Mapped[str] = mapped_column(Text, default="")
+    pitfalls: Mapped[str] = mapped_column(Text, default="")
+    duration_minutes: Mapped[int] = mapped_column(Integer, default=60)
+    order: Mapped[int] = mapped_column(Integer, default=0)
+    completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class TaskComment(Base):
+    __tablename__ = "task_comments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    task_id: Mapped[int] = mapped_column(Integer, index=True)
+    user_id: Mapped[int] = mapped_column(Integer)
+    content: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class ResearchCache(Base):
     __tablename__ = "research_cache"
 

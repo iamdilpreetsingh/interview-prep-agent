@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Interactive CLI client for CrackCode interview prep agent."""
+"""Interactive CLI client for Mikasa interview prep agent."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ async def setup_profile() -> int:
 
     console.print(
         Panel(
-            "[bold]Welcome to CrackCode![/bold]\n"
+            "[bold]Welcome to Mikasa![/bold]\n"
             "Your AI interview coach for cracking SDE roles at top tech companies.\n"
             "Let's set up your profile first.",
             border_style="cyan",
@@ -102,7 +102,7 @@ async def main():
 
     console.print(
         Panel(
-            "[bold cyan]CrackCode[/bold cyan] is ready. Type your message below.\n"
+            "[bold cyan]Mikasa[/bold cyan] is ready. Type your message below.\n"
             "Commands: [dim]/quit[/dim] to exit, [dim]/profile[/dim] to view profile, "
             "[dim]/progress[/dim] to see scores, [dim]/goals[/dim] to see goals",
             border_style="cyan",
@@ -156,7 +156,7 @@ async def main():
             console.print(f"[dim]Tools used: {', '.join(tools_used)}[/dim]")
 
         console.print()
-        console.print(Panel(Markdown(reply), title="[bold cyan]CrackCode[/bold cyan]", border_style="cyan"))
+        console.print(Panel(Markdown(reply), title="[bold cyan]Mikasa[/bold cyan]", border_style="cyan"))
 
 
 if __name__ == "__main__":

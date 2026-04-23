@@ -11,10 +11,13 @@ from sqlalchemy import select, update
 from app.config import settings
 from app.database import (
     Conversation,
+    DailyPlan,
+    DailyTask,
     Goal,
     Progress,
     ResearchCache,
     StudyPlan,
+    TaskComment,
     User,
     async_session,
 )
@@ -209,6 +212,63 @@ TOOL_DEFINITIONS = [
                 "result": {"type": "string"},
             },
             "required": ["company", "query", "result"],
+        },
+    },
+    {
+        "name": "create_daily_plan",
+        "description": (
+            "Create a structured daily study plan with tasks that appears on the user's dashboard. "
+            "Each task has a session (morning_1, morning_2, night), title, description, resources, "
+            "success metric, common pitfalls, and duration. The user tracks completion on the dashboard."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "integer"},
+                "day_number": {"type": "integer", "description": "Day number (1-based)"},
+                "date": {"type": "string", "description": "Date in YYYY-MM-DD format if known"},
+                "week_number": {"type": "integer", "description": "Week number (1-based)"},
+                "phase": {"type": "string", "description": "e.g. Phase 1 - Foundation, Phase 2 - Patterns"},
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "session": {
+                                "type": "string",
+                                "description": "Session block: morning_1, morning_2, night_1, night_2, night_3",
+                            },
+                            "title": {"type": "string", "description": "Specific task name"},
+                            "description": {"type": "string", "description": "Detailed instructions"},
+                            "resources": {"type": "string", "description": "Links, references, materials"},
+                            "success_metric": {"type": "string", "description": "How to know task is done"},
+                            "pitfalls": {"type": "string", "description": "Common mistakes to avoid"},
+                            "duration_minutes": {"type": "integer"},
+                            "order": {"type": "integer", "description": "Task order within the day"},
+                        },
+                        "required": ["session", "title", "duration_minutes"],
+                    },
+                },
+            },
+            "required": ["user_id", "day_number", "week_number", "tasks"],
+        },
+    },
+    {
+        "name": "get_daily_plan",
+        "description": (
+            "Retrieve a specific day's plan with all tasks, their completion status, and comments. "
+            "Use this to check the user's progress and adapt future plans."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "integer"},
+                "day_number": {
+                    "type": "integer",
+                    "description": "Day number to retrieve. Omit for the latest day.",
+                },
+            },
+            "required": ["user_id"],
         },
     },
 ]
@@ -533,6 +593,125 @@ async def save_research(company: str, query: str, result: str) -> str:
     return json.dumps({"status": "cached"})
 
 
+async def create_daily_plan(
+    user_id: int,
+    day_number: int,
+    week_number: int,
+    tasks: list[dict],
+    date: str | None = None,
+    phase: str = "Phase 1",
+) -> str:
+    async with async_session() as session:
+        # Remove existing plan for this day
+        existing = await session.execute(
+            select(DailyPlan).where(
+                DailyPlan.user_id == user_id, DailyPlan.day_number == day_number
+            )
+        )
+        old_plan = existing.scalar_one_or_none()
+        if old_plan:
+            # Delete old tasks
+            old_tasks = await session.execute(
+                select(DailyTask).where(DailyTask.plan_id == old_plan.id)
+            )
+            for t in old_tasks.scalars().all():
+                await session.delete(t)
+            await session.delete(old_plan)
+
+        plan = DailyPlan(
+            user_id=user_id,
+            day_number=day_number,
+            date=date,
+            week_number=week_number,
+            phase=phase,
+        )
+        session.add(plan)
+        await session.flush()
+
+        for i, t in enumerate(tasks):
+            session.add(
+                DailyTask(
+                    plan_id=plan.id,
+                    user_id=user_id,
+                    session=t.get("session", ""),
+                    title=t["title"],
+                    description=t.get("description", ""),
+                    resources=t.get("resources", ""),
+                    success_metric=t.get("success_metric", ""),
+                    pitfalls=t.get("pitfalls", ""),
+                    duration_minutes=t.get("duration_minutes", 60),
+                    order=t.get("order", i),
+                )
+            )
+        await session.commit()
+    return json.dumps({"status": "ok", "day": day_number, "tasks_created": len(tasks)})
+
+
+async def get_daily_plan(user_id: int, day_number: int | None = None) -> str:
+    async with async_session() as session:
+        if day_number:
+            q = select(DailyPlan).where(
+                DailyPlan.user_id == user_id, DailyPlan.day_number == day_number
+            )
+        else:
+            q = (
+                select(DailyPlan)
+                .where(DailyPlan.user_id == user_id)
+                .order_by(DailyPlan.day_number.desc())
+                .limit(1)
+            )
+
+        result = await session.execute(q)
+        plan = result.scalar_one_or_none()
+        if not plan:
+            return json.dumps({"plan": None, "note": "No plan found for this day."})
+
+        tasks_result = await session.execute(
+            select(DailyTask)
+            .where(DailyTask.plan_id == plan.id)
+            .order_by(DailyTask.order)
+        )
+        tasks = tasks_result.scalars().all()
+
+        # Get comments for each task
+        task_data = []
+        for t in tasks:
+            comments_result = await session.execute(
+                select(TaskComment)
+                .where(TaskComment.task_id == t.id)
+                .order_by(TaskComment.created_at)
+            )
+            comments = comments_result.scalars().all()
+
+            task_data.append({
+                "id": t.id,
+                "session": t.session,
+                "title": t.title,
+                "description": t.description,
+                "resources": t.resources,
+                "success_metric": t.success_metric,
+                "pitfalls": t.pitfalls,
+                "duration_minutes": t.duration_minutes,
+                "completed": t.completed,
+                "comments": [
+                    {"id": c.id, "content": c.content, "created_at": c.created_at.isoformat()}
+                    for c in comments
+                ],
+            })
+
+        return json.dumps({
+            "plan": {
+                "id": plan.id,
+                "day_number": plan.day_number,
+                "date": plan.date,
+                "week_number": plan.week_number,
+                "phase": plan.phase,
+                "status": plan.status,
+                "tasks": task_data,
+            }
+        })
+
+
 # ── Tool Dispatcher ─────────────────────────────────────────────────────────
 
 TOOL_HANDLERS = {
@@ -557,6 +736,15 @@ TOOL_HANDLERS = {
         args["user_id"], args["week_number"], args["blocks"]
     ),
     "save_research": lambda args: save_research(args["company"], args["query"], args["result"]),
+    "create_daily_plan": lambda args: create_daily_plan(
+        args["user_id"],
+        args["day_number"],
+        args["week_number"],
+        args["tasks"],
+        args.get("date"),
+        args.get("phase", "Phase 1"),
+    ),
+    "get_daily_plan": lambda args: get_daily_plan(args["user_id"], args.get("day_number")),
 }
 
 
