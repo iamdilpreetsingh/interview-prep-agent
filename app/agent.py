@@ -12,7 +12,7 @@ from app.tools import TOOL_DEFINITIONS, execute_tool, get_user_profile, get_user
 client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
 # Max tool-use iterations per turn to prevent runaway loops
-MAX_TOOL_ROUNDS = 10
+MAX_TOOL_ROUNDS = 5
 
 
 async def chat(user_id: int, user_message: str) -> tuple[str, list[str]]:
