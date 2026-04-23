@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrackCode - Interview Prep Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+        .chat-container { height: calc(100vh - 200px); }
+        .msg-content pre { background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; }
+        .msg-content code { background: #1e293b; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        .msg-content pre code { background: none; color: #e2e8f0; padding: 0; }
+        .msg-content ul, .msg-content ol { padding-left: 1.5rem; margin: 8px 0; }
+        .msg-content li { margin: 4px 0; }
+        .msg-content h1, .msg-content h2, .msg-content h3 { font-weight: 700; margin: 12px 0 6px 0; }
+        .msg-content h1 { font-size: 1.3em; }
+        .msg-content h2 { font-size: 1.15em; }
+        .msg-content h3 { font-size: 1.05em; }
+        .msg-content p { margin: 6px 0; }
+        .msg-content table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+        .msg-content th, .msg-content td { border: 1px solid #334155; padding: 6px 10px; text-align: left; }
+        .msg-content th { background: #1e293b; font-weight: 600; }
+        .typing-dot { animation: blink 1.4s infinite both; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 80%, 100% { opacity: 0; } 40% { opacity: 1; } }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100">
+
+    <!-- Onboarding Modal -->
+    <div id="onboarding" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-lg w-full">
+            <h2 class="text-2xl font-bold text-cyan-400 mb-1">Welcome to CrackCode</h2>
+            <p class="text-gray-400 mb-6">Your AI interview coach. Let's set up your profile.</p>
+            <form id="profile-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Name</label>
+                    <input id="f-name" type="text" required class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-cyan-500 focus:outline-none" placeholder="Your name">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Target Company</label>
+                        <input id="f-company" type="text" value="Zomato" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Target Role</label>
+                        <input id="f-role" type="text" value="SDE-2" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Experience (years)</label>
+                        <input id="f-exp" type="number" value="2" step="0.5" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Daily Hours for Prep</label>
+                        <input id="f-hours" type="number" value="2" step="0.5" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Tech Stack (comma-separated)</label>
+                    <input id="f-tech" type="text" value="Python, Java" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-cyan-500 focus:outline-none" placeholder="Python, Java, Node.js">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Strengths (comma-separated)</label>
+                    <input id="f-strengths" type="text" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-cyan-500 focus:outline-none" placeholder="Backend, System Design">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Areas to Improve (comma-separated)</label>
+                    <input id="f-weak" type="text" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-cyan-500 focus:outline-none" placeholder="DP, Graphs">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Preferred Study Time</label>
+                    <select id="f-time" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                        <option value="morning">Morning</option>
+                        <option value="afternoon">Afternoon</option>
+                        <option value="evening" selected>Evening</option>
+                        <option value="night">Night</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold py-3 rounded-lg transition-colors">
+                    Start Preparing
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="flex flex-col h-screen max-w-4xl mx-auto">
+
+        <!-- Header -->
+        <header class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-600 flex items-center justify-center font-bold text-lg">C</div>
+                <div>
+                    <h1 class="font-bold text-lg text-white">CrackCode</h1>
+                    <p id="header-subtitle" class="text-xs text-gray-500">Interview Prep Agent</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="showPanel('progress')" class="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">Progress</button>
+                <button onclick="showPanel('goals')" class="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">Goals</button>
+                <button onclick="showPanel('profile')" class="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">Profile</button>
+            </div>
+        </header>
+
+        <!-- Side Panel (slides over chat) -->
+        <div id="side-panel" class="hidden fixed inset-0 bg-black/60 z-40" onclick="closePanel()">
+            <div class="absolute right-0 top-0 h-full w-full max-w-md bg-gray-900 border-l border-gray-700 p-6 overflow-y-auto" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="panel-title" class="text-xl font-bold text-cyan-400"></h2>
+                    <button onclick="closePanel()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                </div>
+                <div id="panel-content" class="text-gray-300"></div>
+            </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chat-messages" class="chat-container overflow-y-auto px-6 py-4 space-y-4">
+            <div class="flex justify-center">
+                <div class="text-center text-gray-500 text-sm py-8">
+                    <div class="w-16 h-16 rounded-2xl bg-cyan-600/20 flex items-center justify-center mx-auto mb-4">
+                        <span class="text-3xl text-cyan-400 font-bold">C</span>
+                    </div>
+                    <p class="font-medium text-gray-300 mb-1">CrackCode is ready</p>
+                    <p>Ask me anything about interview prep, DSA, system design, or career guidance.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="px-6 py-4 border-t border-gray-800">
+            <form id="chat-form" class="flex gap-3">
+                <textarea
+                    id="msg-input"
+                    rows="1"
+                    placeholder="Type your message..."
+                    class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white resize-none focus:border-cyan-500 focus:outline-none placeholder-gray-500"
+                    onkeydown="handleKeydown(event)"
+                    oninput="autoResize(this)"
+                ></textarea>
+                <button
+                    type="submit"
+                    id="send-btn"
+                    class="px-5 py-3 bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors"
+                >
+                    Send
+                </button>
+            </form>
+            <p class="text-center text-gray-600 text-xs mt-2">Powered by Claude Sonnet | Responses may take a moment on first request (cold start)</p>
+        </div>
+    </div>
+
+    <script>
+        const API = window.location.origin;
+        let userId = localStorage.getItem('crackcode_user_id');
+        let isProcessing = false;
+
+        // --- Init ---
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!userId) {
+                document.getElementById('onboarding').classList.remove('hidden');
+            } else {
+                loadProfile();
+            }
+        });
+
+        // --- Profile Setup ---
+        document.getElementById('profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.textContent = 'Setting up...';
+            btn.disabled = true;
+
+            const body = {
+                name: document.getElementById('f-name').value,
+                target_company: document.getElementById('f-company').value,
+                target_role: document.getElementById('f-role').value,
+                experience_years: parseFloat(document.getElementById('f-exp').value),
+                tech_stack: document.getElementById('f-tech').value.split(',').map(s => s.trim()).filter(Boolean),
+                strengths: document.getElementById('f-strengths').value.split(',').map(s => s.trim()).filter(Boolean),
+                weaknesses: document.getElementById('f-weak').value.split(',').map(s => s.trim()).filter(Boolean),
+                daily_hours_available: parseFloat(document.getElementById('f-hours').value),
+                preferred_study_time: document.getElementById('f-time').value,
+            };
+
+            try {
+                const res = await fetch(`${API}/profile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                const data = await res.json();
+                userId = data.id;
+                localStorage.setItem('crackcode_user_id', userId);
+                document.getElementById('onboarding').classList.add('hidden');
+                document.getElementById('header-subtitle').textContent =
+                    `${data.target_role} @ ${data.target_company} | ${data.name}`;
+            } catch (err) {
+                alert('Failed to create profile: ' + err.message);
+                btn.textContent = 'Start Preparing';
+                btn.disabled = false;
+            }
+        });
+
+        async function loadProfile() {
+            try {
+                const res = await fetch(`${API}/profile/${userId}`);
+                if (!res.ok) {
+                    localStorage.removeItem('crackcode_user_id');
+                    userId = null;
+                    document.getElementById('onboarding').classList.remove('hidden');
+                    return;
+                }
+                const data = await res.json();
+                document.getElementById('header-subtitle').textContent =
+                    `${data.target_role} @ ${data.target_company} | ${data.name}`;
+            } catch (err) {
+                console.error('Failed to load profile:', err);
+            }
+        }
+
+        // --- Chat ---
+        document.getElementById('chat-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('msg-input');
+            const message = input.value.trim();
+            if (!message || isProcessing) return;
+
+            addMessage('user', message);
+            input.value = '';
+            input.style.height = 'auto';
+            isProcessing = true;
+            document.getElementById('send-btn').disabled = true;
+
+            const thinkingId = addThinking();
+
+            try {
+                const res = await fetch(`${API}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: parseInt(userId), message }),
+                });
+                const data = await res.json();
+                removeThinking(thinkingId);
+
+                if (data.tools_used && data.tools_used.length > 0) {
+                    addToolsUsed(data.tools_used);
+                }
+                addMessage('assistant', data.reply);
+            } catch (err) {
+                removeThinking(thinkingId);
+                addMessage('assistant', 'Something went wrong: ' + err.message);
+            }
+
+            isProcessing = false;
+            document.getElementById('send-btn').disabled = false;
+            input.focus();
+        });
+
+        function addMessage(role, content) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `fade-in flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+
+            if (role === 'user') {
+                div.innerHTML = `
+                    <div class="max-w-[80%] bg-cyan-600/20 border border-cyan-800/50 rounded-2xl rounded-tr-sm px-4 py-3 text-gray-100">
+                        ${escapeHtml(content)}
+                    </div>`;
+            } else {
+                div.innerHTML = `
+                    <div class="max-w-[85%] flex gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">C</div>
+                        <div class="msg-content bg-gray-800/50 border border-gray-700/50 rounded-2xl rounded-tl-sm px-5 py-3 text-gray-200">
+                            ${marked.parse(content)}
+                        </div>
+                    </div>`;
+            }
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addToolsUsed(tools) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = 'fade-in flex justify-start';
+            div.innerHTML = `
+                <div class="ml-11 flex gap-2 flex-wrap">
+                    ${tools.map(t => `<span class="text-xs bg-gray-800 text-cyan-400 border border-gray-700 px-2 py-1 rounded-md">${t}</span>`).join('')}
+                </div>`;
+            container.appendChild(div);
+        }
+
+        function addThinking() {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            const id = 'thinking-' + Date.now();
+            div.id = id;
+            div.className = 'fade-in flex justify-start';
+            div.innerHTML = `
+                <div class="flex gap-3 items-center">
+                    <div class="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center text-sm font-bold flex-shrink-0">C</div>
+                    <div class="flex gap-1.5 px-4 py-3">
+                        <div class="w-2 h-2 bg-cyan-400 rounded-full typing-dot"></div>
+                        <div class="w-2 h-2 bg-cyan-400 rounded-full typing-dot"></div>
+                        <div class="w-2 h-2 bg-cyan-400 rounded-full typing-dot"></div>
+                    </div>
+                </div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeThinking(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        // --- Input Handling ---
+        function handleKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+            }
+        }
+
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+        }
+
+        // --- Side Panels ---
+        async function showPanel(type) {
+            const panel = document.getElementById('side-panel');
+            const title = document.getElementById('panel-title');
+            const content = document.getElementById('panel-content');
+            content.innerHTML = '<p class="text-gray-500">Loading...</p>';
+            panel.classList.remove('hidden');
+
+            try {
+                let res, data;
+                if (type === 'profile') {
+                    title.textContent = 'Your Profile';
+                    res = await fetch(`${API}/profile/${userId}`);
+                    data = await res.json();
+                    content.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="bg-gray-800 rounded-lg p-4">
+                                <p class="text-sm text-gray-400">Name</p>
+                                <p class="font-medium">${data.name}</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-gray-800 rounded-lg p-4">
+                                    <p class="text-sm text-gray-400">Target</p>
+                                    <p class="font-medium">${data.target_role} @ ${data.target_company}</p>
+                                </div>
+                                <div class="bg-gray-800 rounded-lg p-4">
+                                    <p class="text-sm text-gray-400">Experience</p>
+                                    <p class="font-medium">${data.experience_years} years</p>
+                                </div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-4">
+                                <p class="text-sm text-gray-400">Tech Stack</p>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    ${(data.tech_stack || []).map(t => `<span class="px-2 py-1 bg-gray-700 rounded text-sm">${t}</span>`).join('')}
+                                </div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-4">
+                                <p class="text-sm text-gray-400">Strengths</p>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    ${(data.strengths || []).map(s => `<span class="px-2 py-1 bg-green-900/50 text-green-400 rounded text-sm">${s}</span>`).join('') || '<span class="text-gray-500">Not set</span>'}
+                                </div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-4">
+                                <p class="text-sm text-gray-400">Areas to Improve</p>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    ${(data.weaknesses || []).map(w => `<span class="px-2 py-1 bg-orange-900/50 text-orange-400 rounded text-sm">${w}</span>`).join('') || '<span class="text-gray-500">Not set</span>'}
+                                </div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-4">
+                                <p class="text-sm text-gray-400">Study Schedule</p>
+                                <p class="font-medium">${data.daily_hours_available}h/day, ${data.preferred_study_time}</p>
+                            </div>
+                        </div>`;
+                } else if (type === 'progress') {
+                    title.textContent = 'Your Progress';
+                    res = await fetch(`${API}/progress/${userId}`);
+                    data = await res.json();
+                    if (!data.progress || data.progress.length === 0) {
+                        content.innerHTML = '<p class="text-gray-500 py-8 text-center">No progress tracked yet. Start practicing and the agent will evaluate you.</p>';
+                    } else {
+                        content.innerHTML = `
+                            <div class="space-y-3">
+                                ${data.progress.map(p => `
+                                    <div class="bg-gray-800 rounded-lg p-4">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <div>
+                                                <span class="font-medium">${p.topic}</span>
+                                                ${p.subtopic ? `<span class="text-gray-400 text-sm ml-2">${p.subtopic}</span>` : ''}
+                                            </div>
+                                            <span class="text-lg font-bold ${p.score >= 70 ? 'text-green-400' : p.score >= 40 ? 'text-yellow-400' : 'text-red-400'}">${p.score}</span>
+                                        </div>
+                                        <div class="w-full bg-gray-700 rounded-full h-2">
+                                            <div class="h-2 rounded-full ${p.score >= 70 ? 'bg-green-500' : p.score >= 40 ? 'bg-yellow-500' : 'bg-red-500'}" style="width:${p.score}%"></div>
+                                        </div>
+                                        ${p.notes ? `<p class="text-sm text-gray-400 mt-2">${p.notes}</p>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>`;
+                    }
+                } else if (type === 'goals') {
+                    title.textContent = 'Your Goals';
+                    res = await fetch(`${API}/goals/${userId}`);
+                    data = await res.json();
+                    if (!data.goals || data.goals.length === 0) {
+                        content.innerHTML = '<p class="text-gray-500 py-8 text-center">No goals set yet. Ask the agent to create a study plan for you.</p>';
+                    } else {
+                        content.innerHTML = `
+                            <div class="space-y-3">
+                                ${data.goals.map(g => `
+                                    <div class="bg-gray-800 rounded-lg p-4">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <p class="font-medium">${g.title}</p>
+                                                ${g.description ? `<p class="text-sm text-gray-400 mt-1">${g.description}</p>` : ''}
+                                            </div>
+                                            <span class="px-2 py-1 rounded text-xs font-medium
+                                                ${g.status === 'completed' ? 'bg-green-900/50 text-green-400' :
+                                                  g.status === 'in_progress' ? 'bg-cyan-900/50 text-cyan-400' :
+                                                  'bg-gray-700 text-gray-400'}">${g.status}</span>
+                                        </div>
+                                        ${g.target_date ? `<p class="text-xs text-gray-500 mt-2">Due: ${g.target_date}</p>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>`;
+                    }
+                }
+            } catch (err) {
+                content.innerHTML = `<p class="text-red-400">Failed to load: ${err.message}</p>`;
+            }
+        }
+
+        function closePanel() {
+            document.getElementById('side-panel').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
