@@ -7,7 +7,7 @@ from sqlalchemy import select
 from app.database import Conversation, async_session
 
 # Max messages to load as context (keeps token usage reasonable)
-MAX_HISTORY = 40
+MAX_HISTORY = 20
 
 
 async def load_history(user_id: int) -> list[dict]:
